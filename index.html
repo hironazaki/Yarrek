@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>3D Oda Deneyimi</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { width: 100%; height: 100%; }
+        #buttonText {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: red;
+            font-size: 24px;
+            font-family: Arial, sans-serif;
+            pointer-events: none;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="buttonText">Sakın Basma</div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script>
+        // Sahne, Kamera, Renderer
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Işık
+        const light = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(light);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        directionalLight.position.set(0, 1, 1);
+        scene.add(directionalLight);
+
+        // İlk Oda (Boş)
+        const floor1Geometry = new THREE.PlaneGeometry(10, 10);
+        const floor1Material = new THREE.MeshBasicMaterial({ color: 0x808080, side: THREE.DoubleSide });
+        const floor1 = new THREE.Mesh(floor1Geometry, floor1Material);
+        floor1.rotation.x = Math.PI / 2;
+        floor1.position.z = 5;
+        scene.add(floor1);
+
+        const wall1Geometry = new THREE.PlaneGeometry(10, 5);
+        const wall1Material = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
+        const wall1Back = new THREE.Mesh(wall1Geometry, wall1Material);
+        wall1Back.position.z = 0;
+        wall1Back.position.y = 2.5;
+        scene.add(wall1Back);
+
+        // İkinci Oda
+        const floor2Geometry = new THREE.PlaneGeometry(10, 10);
+        const floor2Material = new THREE.MeshBasicMaterial({ color: 0x808080, side: THREE.DoubleSide });
+        const floor2 = new THREE.Mesh(floor2Geometry, floor2Material);
+        floor2.rotation.x = Math.PI / 2;
+        floor2.position.z = -5;
+        scene.add(floor2);
+
+        const wall2Geometry = new THREE.PlaneGeometry(10, 5);
+        const wall2Material = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
+        const wall2Back = new THREE.Mesh(wall2Geometry, wall2Material);
+        wall2Back.position.z = -10;
+        wall2Back.position.y = 2.5;
+        scene.add(wall2Back);
+
+        const wall2Left = new THREE.Mesh(wall2Geometry, wall2Material);
+        wall2Left.position.x = -5;
+        wall2Left.position.y = 2.5;
+        wall2Left.position.z = -5;
+        wall2Left.rotation.y = Math.PI / 2;
+        scene.add(wall2Left);
+
+        const wall2Right = new THREE.Mesh(wall2Geometry, wall2Material);
+        wall2Right.position.x = 5;
+        wall2Right.position.y = 2.5;
+        wall2Right.position.z = -5;
+        wall2Right.rotation.y = Math.PI / 2;
+        scene.add(wall2Right);
+
+        // Kapı
+        const doorGeometry = new THREE.PlaneGeometry(2, 3);
+        const doorMaterial = new THREE.MeshBasicMaterial({ color: 0x8B4513, side: THREE.DoubleSide });
+        const door = new THREE.Mesh(doorGeometry, doorMaterial);
+        door.position.y = 1.5;
+        door.position.z = 0;
+        scene.add(door);
+
+        // Düğme
+        const buttonGeometry = new THREE.SphereGeometry(0.5, 32, 32);
+        const buttonMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        const button = new THREE.Mesh(buttonGeometry, buttonMaterial);
+        button.position.y = 0.5;
+        button.position.z = -5;
+        scene.add(button);
+
+        // Video
+        const video = document.createElement('video');
+        video.src = 'https://i.4cdn.org/gif/1746462191922775.webm';
+        video.crossOrigin = 'anonymous';
+        video.loop = true;
+        video.muted = false;
+
+        const videoTexture = new THREE.VideoTexture(video);
+        const videoMaterial = new THREE.MeshBasicMaterial({ map: videoTexture, side: THREE.DoubleSide });
+
+        // Kamera Kontrolleri
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+        let doorOpen = false;
+        const buttonText = document.getElementById('buttonText');
+
+        document.addEventListener('keydown', (event) => {
+            switch (event.code) {
+                case 'KeyW': moveForward = true; break;
+                case 'KeyS': moveBackward = true; break;
+                case 'KeyA': moveLeft = true; break;
+                case 'KeyD': moveRight = true; break;
+            }
+        });
+
+        document.addEventListener('keyup', (event) => {
+            switch (event.code) {
+                case 'KeyW': moveForward = false; break;
+                case 'KeyS': moveBackward = false; break;
+                case 'KeyA': moveLeft = false; break;
+                case 'KeyD': moveRight = false; break;
+            }
+        });
+
+        // Dokunmatik Kontroller (Telefon için)
+        let touchStartX = 0, touchStartY = 0;
+        document.addEventListener('touchstart', (event) => {
+            touchStartX = event.touches[0].clientX;
+            touchStartY = event.touches[0].clientY;
+        });
+
+        document.addEventListener('touchmove', (event) => {
+            const deltaX = event.touches[0].clientX - touchStartX;
+            const deltaY = event.touches[0].clientY - touchStartY;
+            camera.rotation.y -= deltaX * 0.005;
+            camera.rotation.x -= deltaY * 0.005;
+            camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
+            touchStartX = event.touches[0].clientX;
+            touchStartY = event.touches[0].clientY;
+        });
+
+        // Tıklama/Dokunma Kontrolü
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        document.addEventListener('click', (event) => {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects([button]);
+            if (intersects.length > 0) {
+                video.play();
+                wall2Back.material = videoMaterial;
+                wall2Left.material = videoMaterial;
+                wall2Right.material = videoMaterial;
+                buttonText.style.display = 'none';
+            }
+        });
+
+        // Animasyon
+        camera.position.set(0, 1, 10);
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Hareket
+            const speed = 0.1;
+            if (moveForward) camera.position.z -= speed * Math.cos(camera.rotation.y);
+            if (moveBackward) camera.position.z += speed * Math.cos(camera.rotation.y);
+            if (moveLeft) camera.position.x -= speed * Math.sin(camera.rotation.y);
+            if (moveRight) camera.position.x += speed * Math.sin(camera.rotation.y);
+
+            // Kapı Açma
+            if (camera.position.z < 1 && !doorOpen) {
+                door.rotation.y = -Math.PI / 2;
+                doorOpen = true;
+                buttonText.style.display = 'block';
+            }
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Ekran Boyut Değişikliği
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
